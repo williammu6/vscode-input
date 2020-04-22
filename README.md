@@ -1,65 +1,48 @@
-# vscode-input README
+<h3 align="center"><strong>VSCode Input</strong></h3>
 
-This is the README for your extension "vscode-input". After writing up a brief description, we recommend including the following sections.
+<b>VSCode Input</b> is a extension for VScode which executes the program of the current open file and feeds as <b>STDIN input</b> the values provided in commends.
 
-## Features
+The input is obtained through the commends written on top of the file like the examples shown in [Usage](#usage)
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+> Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
-For example if there is an image subfolder under your extension project workspace:
+# Configuration
 
-\!\[feature X\]\(images/feature-x.png\)
+# Usage
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+C++
 
-## Requirements
+```c++
+/**input
+3
+string_1
+string_2
+string_3
+*/
+#include <bits/stdc++.h>
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+using namespace std;
 
-## Extension Settings
+int main() {
+    int t;
+    string s;
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+    cin >> t
+    while (cin >> s) {
+        cout << s << endl;
+    }
+    return 0;
+}
+```
 
-For example:
+Output
 
-This extension contributes the following settings:
+```console
+string_1
+string_2
+string_3
+```
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+## Keyboard Shortcuts
 
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- Ctrl + Alt + b - Builds and runs the program (⌘⇧b for Mac)
