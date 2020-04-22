@@ -45,4 +45,4 @@ string_3
 
 ## Keyboard Shortcuts
 
-- Ctrl + Alt + b - Builds and runs the program (⌘⇧b for Mac)
+- Ctrl + Alt + b - Builds and runs the program (⌘⇧B for Mac)
