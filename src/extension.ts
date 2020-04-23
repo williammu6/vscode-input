@@ -25,21 +25,25 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposable);
   };
 
-  registerCommand(context, "vscode-input.Build", async () => {
-    if (!outputChannel) {
-      outputChannel = vscode.window.createOutputChannel("vscode-input.Result");
-    }
-    outputChannel.show();
-    proc = buildCommand(outputChannel);
-  });
-
-  registerCommand(context, "vscode-input.Cancel", () => {
+  const killProcess = () => {
     if (proc) {
       proc.kill();
       infoMessage("Process killed!");
     } else {
       infoMessage("No process to kill!");
     }
+  };
+
+  registerCommand(context, "vscode-input.Build", async () => {
+    if (!outputChannel) {
+      outputChannel = vscode.window.createOutputChannel("vscode-input.Result");
+    }
+    outputChannel.clear();
+    proc = buildCommand(outputChannel);
+  });
+
+  registerCommand(context, "vscode-input.Cancel", () => {
+    killProcess();
   });
 }
 

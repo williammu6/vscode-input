@@ -2,6 +2,12 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as cp from "child_process";
 
+export interface LanguageConfig {
+  regex: RegExp;
+  executable: string;
+  extension: string;
+}
+
 export function buildCommand(
   outputChannel: vscode.OutputChannel
 ): cp.ChildProcess | null {
@@ -18,6 +24,23 @@ export function buildCommand(
     return null;
   };
 
+  const languageConfig = (extension: string): LanguageConfig => {
+    const configs: any = {
+      cpp: {
+        regex: /(?<=\*\*input\n)(.*\n)*(?=\*)/,
+        executable: "g++",
+        extension,
+      },
+      py: {
+        regex: /(?<="""input\n)(.*\n)*(?=")/,
+        executable: "python3",
+        extension,
+      },
+    };
+
+    return configs[extension];
+  };
+
   const saveInputToFile = (input: string): string => {
     const path = "/tmp/file";
     fs.writeFileSync(path, input, "utf8");
@@ -27,16 +50,15 @@ export function buildCommand(
   const execCommand = (
     path: string,
     inputPath: string,
-    extension: string,
-    executable: string
+    languageConfig: LanguageConfig
   ): cp.ChildProcess | null => {
-    const command = getCommand(path, inputPath, extension, executable);
+    const command = getCommand(path, inputPath, languageConfig);
     if (!command) return null;
     const proc: cp.ChildProcess = cp.exec(command, (err, stdout, stderr) => {
       outputChannel.clear();
       if (stdout) {
         outputChannel.append(stdout);
-        outputChannel.show();
+        outputChannel.show(true);
       }
       if (err) {
         outputChannel.append(err.message);
@@ -49,40 +71,22 @@ export function buildCommand(
   const getCommand = (
     path: string,
     inputPath: string,
-    extension: string,
-    executable: string
+    languageConfig: LanguageConfig
   ): string => {
-    switch (extension) {
+    switch (languageConfig.extension) {
       case "cpp":
-        return `${executable} -lm ${path} -o bin && ./bin < ${inputPath}`;
+        return `${languageConfig.executable} -lm ${path} -o bin && ./bin < ${inputPath}`;
       case "py":
-        return `${executable} ${path} < ${inputPath}`;
+        return `${languageConfig.executable} ${path} < ${inputPath}`;
       default:
         return "";
     }
   };
 
-  const getConfigByFileExt = (
-    path: string
-  ): [RegExp, string, string] | null => {
+  const getConfigByFileExt = (path: string): LanguageConfig => {
     let split: string[] = path.split(".");
     let extension = split[split.length - 1];
-
-    var regexExp: RegExp;
-    var executable: string;
-
-    switch (extension) {
-      case "cpp":
-        regexExp = /(?<=\*\*input\n)(.*\n)*(?=\*)/g;
-        executable = "g++";
-        return [regexExp, executable, extension];
-      case "py":
-        regexExp = /(?<="""input\n)(.*\n)*(?=")/g;
-        executable = "python3";
-        return [regexExp, executable, extension];
-      default:
-        return null;
-    }
+    return languageConfig(extension);
   };
 
   const currentlyOpenTabfilePath: string =
@@ -90,21 +94,20 @@ export function buildCommand(
 
   if (currentlyOpenTabfilePath) {
     try {
-      const config = getConfigByFileExt(currentlyOpenTabfilePath);
-      if (config) {
-        const [regexExp, executable, extension] = config;
-        const input = extractInputFromFile(currentlyOpenTabfilePath, regexExp);
-        if (input) {
-          const inputPath = saveInputToFile(input);
-          return execCommand(
-            currentlyOpenTabfilePath,
-            inputPath,
-            extension,
-            executable
-          );
-        }
+      const languageConfig: LanguageConfig = getConfigByFileExt(
+        currentlyOpenTabfilePath
+      );
+      const input = extractInputFromFile(
+        currentlyOpenTabfilePath,
+        languageConfig.regex
+      );
+      if (input) {
+        const inputPath = saveInputToFile(input);
+        return execCommand(currentlyOpenTabfilePath, inputPath, languageConfig);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
   }
   return null;
 }
