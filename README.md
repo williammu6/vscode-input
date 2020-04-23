@@ -27,11 +27,33 @@ int main() {
     string s;
 
     cin >> t
-    while (cin >> s) {
+    while (t--) {
+        cin >> s;
         cout << s << endl;
     }
     return 0;
 }
+```
+
+Python 3
+
+```python
+"""input
+3
+string_1
+string_2
+string_3
+"""
+t = int(input())
+
+while True:
+
+    if t <= 0:
+        break
+
+    print(input())
+
+    t -= 1
 ```
 
 Output
