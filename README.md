@@ -1,4 +1,4 @@
-<h1 align="center"><img src="./assets/logo.png" height="128"><br>VSCode Input</h1>
+<h1 align="center"><img src="assets/logo.png" height="128"><br>VSCode Input</h1>
 <p align="center"><strong>STDIN Input for C++ and Python programs through comment</strong></p>
 
 <b>VSCode Input</b> is a extension for VScode which executes the program of the current open file and feeds as <b>STDIN input</b> the values provided in input comment.
