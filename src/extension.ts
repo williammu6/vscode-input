@@ -1,56 +1,39 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
+import * as cp from "child_process";
+
+import BuildCommand from "./commands/buildCommand";
+import { infoMessage } from "./utils/message";
 
 export function activate(context: vscode.ExtensionContext) {
-  let disposable = vscode.commands.registerCommand(
-    "vscode-input.helloWorld",
-    () => {
-      const extractInputFromFile = (path: string): string | null => {
-        const content = fs.readFileSync(path, "utf8");
-        const input = content.match(/(?<=\*\*input\n)(.*\n)*(?=\*)/g);
-
-        if (input) {
-          return input[0];
+  var proc: cp.ChildProcess | null;
+  const registerCommand = (
+    context: vscode.ExtensionContext,
+    command: string,
+    callback: (...args: any[]) => any
+  ) => {
+    const disposable = vscode.commands.registerCommand(
+      command,
+      async (args) => {
+        if (!vscode.window.activeTextEditor) {
+          return;
         }
-        return null;
-      };
-
-      const saveInputToFile = (input: string): string => {
-        const path = "/tmp/file";
-        fs.writeFileSync(path, Buffer.from(input), "utf8");
-        return path;
-      };
-
-      const currentlyOpenTabfilePath: string =
-        vscode.window.activeTextEditor?.document.uri.fsPath || "";
-
-      const execCommand = (path: string, inputPath: string) => {
-        const command = `g++ -lm ${path} -o bin && ./bin < ${inputPath}`;
-        console.log(command);
-        if (vscode.window.terminals.length > 0) {
-          vscode.window.activeTerminal?.sendText(command);
-        } else {
-          const terminal = vscode.window.createTerminal("command");
-          terminal.sendText(command);
-        }
-      };
-
-      if (currentlyOpenTabfilePath) {
-        try {
-          const input = extractInputFromFile(currentlyOpenTabfilePath);
-          if (input) {
-            const inputPath = saveInputToFile(input);
-            execCommand(currentlyOpenTabfilePath, inputPath);
-            vscode.window.showInformationMessage("Code executed!");
-          }
-        } catch (err) {
-          console.log(err);
-        }
+        callback(args);
       }
-    }
-  );
+    );
+    context.subscriptions.push(disposable);
+  };
 
-  context.subscriptions.push(disposable);
+  registerCommand(context, "vscode-input.Build", async () => {
+    proc = BuildCommand();
+  });
+  registerCommand(context, "vscode-input.Cancel", () => {
+    if (proc) {
+      proc.kill();
+      infoMessage("Process killed!");
+    } else {
+      infoMessage("No process to kill!");
+    }
+  });
 }
 
 export function deactivate() {}

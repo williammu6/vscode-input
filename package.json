@@ -10,23 +10,45 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:vscode-input.helloWorld"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "vscode-input.helloWorld",
-        "title": "Hello World"
+        "command": "vscode-input.Build",
+        "title": "vscode-input.Build and run"
+      },
+      {
+        "command": "vscode-input.Cancel",
+        "title": "vscode-input.Cancel"
       }
     ],
     "keybindings": [
       {
-        "command": "vscode-input.helloWorld",
+        "command": "vscode-input.Build",
         "key": "ctrl+alt+b",
         "mac": "shift+cmd+b"
+      },
+      {
+        "command": "vscode-input.Cancel",
+        "key": "ctrl+alt+c",
+        "mac": "shift+cmd+c"
       }
     ]
+  },
+  "license": "MIT",
+  "keywords": [
+    "vscode-input",
+    "stdin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/williammu6/vscode-input.git"
+  },
+  "homepage": "https://github.com/williammu6/vscode-input",
+  "bugs": {
+    "url": "https://github.com/williammu6/vscode-input/issues"
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
