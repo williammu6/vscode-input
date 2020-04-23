@@ -1,8 +1,11 @@
-<center><img src="./assets/logo.png" alt="logo" width="200"/></center>
-
-<h3 align="center"><strong>VSCode Input</strong></h3>
+<div align="center">
+    <img src="./assets/logo.png">
+    <h3><strong>VSCode Input</strong></h3>
+</div>
 
 <b>VSCode Input</b> is a extension for VScode which executes the program of the current open file and feeds as <b>STDIN input</b> the values provided in commends.
+
+The input is obtained through the commends written on top of the file like the examples shown in [Usage](#usage)
 
 > Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
