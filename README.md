@@ -9,8 +9,6 @@ The input is obtained through the commends written on top of the file like the e
 
 > Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
-# Configuration
-
 # Usage
 
 C++
