@@ -3,7 +3,7 @@
     <h3><strong>VSCode Input</strong></h3>
 </div>
 
-<b>VSCode Input</b> is a extension for VScode which executes the program of the current open file and feeds as <b>STDIN input</b> the values provided in commends.
+<b>VSCode Input</b> is a extension for VScode which executes the program of the current open file and feeds as <b>STDIN input</b> the values provided in input comment.
 
 The input is obtained through the commends written on top of the file like the examples shown in [Usage](#usage)
 
