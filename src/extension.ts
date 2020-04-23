@@ -35,6 +35,9 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   registerCommand(context, "vscode-input.Build", async () => {
+    // TODO: Set focus to editor when focus it's not focused
+    // TODO: Allow user to change default executable path for each programming language
+    // TODO: Allow user to run executable with some flags (such as g++ -std=c++-17)
     if (!outputChannel) {
       outputChannel = vscode.window.createOutputChannel("vscode-input.Result");
     }

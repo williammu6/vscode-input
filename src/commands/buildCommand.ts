@@ -11,20 +11,16 @@ export interface LanguageConfig {
 export function buildCommand(
   outputChannel: vscode.OutputChannel
 ): cp.ChildProcess | null {
-  const extractInputFromFile = (
-    path: string,
-    regexExp: RegExp
-  ): string | null => {
+  const extractInputFromFile = (path: string, regexExp: RegExp): string => {
     const content = fs.readFileSync(path, "utf8");
     const input = content.match(regexExp);
-
     if (input) {
       return input[0];
     }
-    return null;
+    return "";
   };
 
-  const languageConfig = (extension: string): LanguageConfig => {
+  const languageConfig = (extension: string): LanguageConfig | null => {
     const configs: any = {
       cpp: {
         regex: /(?<=\*\*input\n)(.*\n)*(?=\*)/,
@@ -37,28 +33,39 @@ export function buildCommand(
         extension,
       },
     };
-
-    return configs[extension];
+    if (configs[extension]) {
+      return configs[extension];
+    }
+    return null;
   };
 
-  const saveInputToFile = (input: string): string => {
-    const path = "/tmp/file";
-    fs.writeFileSync(path, input, "utf8");
-    return path;
+  const getCommand = (
+    path: string,
+    input: string,
+    languageConfig: LanguageConfig
+  ): string => {
+    switch (languageConfig.extension) {
+      case "cpp":
+        return `${languageConfig.executable} -lm ${path} -o bin && echo "${input}" | ./bin`;
+      case "py":
+        return `echo "${input}" | ${languageConfig.executable} ${path}`;
+      default:
+        return "";
+    }
   };
 
   const execCommand = (
     path: string,
-    inputPath: string,
+    input: string,
     languageConfig: LanguageConfig
   ): cp.ChildProcess | null => {
-    const command = getCommand(path, inputPath, languageConfig);
+    const command = getCommand(path, input, languageConfig);
     if (!command) return null;
     const proc: cp.ChildProcess = cp.exec(command, (err, stdout, stderr) => {
       outputChannel.clear();
+      outputChannel.show(true);
       if (stdout) {
         outputChannel.append(stdout);
-        outputChannel.show(true);
       }
       if (err) {
         outputChannel.append(err.message);
@@ -68,22 +75,7 @@ export function buildCommand(
     return proc;
   };
 
-  const getCommand = (
-    path: string,
-    inputPath: string,
-    languageConfig: LanguageConfig
-  ): string => {
-    switch (languageConfig.extension) {
-      case "cpp":
-        return `${languageConfig.executable} -lm ${path} -o bin && ./bin < ${inputPath}`;
-      case "py":
-        return `${languageConfig.executable} ${path} < ${inputPath}`;
-      default:
-        return "";
-    }
-  };
-
-  const getConfigByFileExt = (path: string): LanguageConfig => {
+  const getConfigByFileExt = (path: string): LanguageConfig | null => {
     let split: string[] = path.split(".");
     let extension = split[split.length - 1];
     return languageConfig(extension);
@@ -94,16 +86,15 @@ export function buildCommand(
 
   if (currentlyOpenTabfilePath) {
     try {
-      const languageConfig: LanguageConfig = getConfigByFileExt(
+      const languageConfig: LanguageConfig | null = getConfigByFileExt(
         currentlyOpenTabfilePath
       );
-      const input = extractInputFromFile(
-        currentlyOpenTabfilePath,
-        languageConfig.regex
-      );
-      if (input) {
-        const inputPath = saveInputToFile(input);
-        return execCommand(currentlyOpenTabfilePath, inputPath, languageConfig);
+      if (languageConfig) {
+        const input = extractInputFromFile(
+          currentlyOpenTabfilePath,
+          languageConfig.regex
+        );
+        return execCommand(currentlyOpenTabfilePath, input, languageConfig);
       }
     } catch (err) {
       console.log(err);
