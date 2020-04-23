@@ -1,11 +1,13 @@
 import * as vscode from "vscode";
 import * as cp from "child_process";
 
-import BuildCommand from "./commands/buildCommand";
+import { buildCommand } from "./commands/buildCommand";
 import { infoMessage } from "./utils/message";
 
 export function activate(context: vscode.ExtensionContext) {
   var proc: cp.ChildProcess | null;
+  var outputChannel: vscode.OutputChannel;
+
   const registerCommand = (
     context: vscode.ExtensionContext,
     command: string,
@@ -24,8 +26,13 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   registerCommand(context, "vscode-input.Build", async () => {
-    proc = BuildCommand();
+    if (!outputChannel) {
+      outputChannel = vscode.window.createOutputChannel("vscode-input.Result");
+    }
+    outputChannel.show();
+    proc = buildCommand(outputChannel);
   });
+
   registerCommand(context, "vscode-input.Cancel", () => {
     if (proc) {
       proc.kill();

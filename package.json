@@ -6,6 +6,11 @@
   "engines": {
     "vscode": "^1.44.0"
   },
+  "author": {
+    "name": "William Murari",
+    "email": "williammu6@gmail.com"
+  },
+  "publisher": "williammu6",
   "categories": [
     "Other"
   ],
@@ -14,6 +19,24 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "VSCode-Input",
+      "properties": {
+        "vscode-input.executable.g++": {
+          "type": "string",
+          "default": "g++",
+          "markdownDescription": "Specifies the path to executable",
+          "scope": "application"
+        },
+        "vscode-input.executable.python": {
+          "type": "string",
+          "default": "python3",
+          "markdownDescription": "Specifies the path to executable",
+          "scope": "application"
+        }
+      }
+    },
     "commands": [
       {
         "command": "vscode-input.Build",
