@@ -46,5 +46,5 @@ string_3
 
 ## Keyboard Shortcuts
 
-- Ctrl + Alt + b - Builds and runs the program (⌘⇧B for Mac)
-- Ctrl + Alt + c - Builds and runs the program (⌘⇧C for Mac)
+- Ctrl + Alt + b - vscode-input.Build - Builds and runs the program (⌘⇧B for Mac)
+- Ctrl + Alt + c - vscode-input.Cancel - Cancels current running program (⌘⇧C for Mac)
