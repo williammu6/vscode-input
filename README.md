@@ -3,7 +3,7 @@
 
 <b>VSCode Input</b> is a extension for VScode which executes the program of the current open file and feeds as <b>STDIN input</b> the values provided in input comment.
 
-The input is obtained through the commends written on top of the file like the examples shown in [Usage](#usage)
+The input is obtained through the comments written on top of the file like the examples shown in [Usage](#usage)
 
 > Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
