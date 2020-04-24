@@ -7,6 +7,10 @@ The input is obtained through the commends written on top of the file like the e
 
 > Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
+# Configuration
+
+It is necessary to have executable binary in environment variables for now.
+
 # Usage
 
 C++
