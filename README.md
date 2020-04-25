@@ -14,8 +14,8 @@ It is possible to change path to executable and execution flags via <i>Preferenc
 
 Name | Description
 --- | --- | --- | --- |--- |--- |--- |--- |--- |--- |--- |---
-<span>vscode-input.compile-command.cpp</span> | Specifies the compile command to run C++. You can add or remove flags if it's necessary, such as -std=c++-17.
-<span>vscode-input.run-command.py</span> |  Specifies the command to execute program
+vscode-input.compile-command.cpp | Specifies the compile command to run C++. You can add or remove flags if it's necessary, such as -std=c++-17.
+vscode-input.run-command.py |  Specifies the command to execute program
 
 
 # Usage
