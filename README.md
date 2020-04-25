@@ -7,7 +7,7 @@ The input is obtained through the comments written on top of the file like the e
 
 > Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
-# Settings
+# VSCode Input Settings
 
 It is possible to change path to executable and execution flags via <i>Preferences: Open Settings</i>.
 
