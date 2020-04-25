@@ -7,9 +7,16 @@ The input is obtained through the comments written on top of the file like the e
 
 > Inspirated by [Sublime Input](https://packagecontrol.io/packages/Sublime%20Input)
 
-# Configuration
+# Settings
 
-It is necessary to have executable binary in environment variables for now.
+It is possible to change path to executable and execution flags via <i>Preferences: Open Settings</i>.
+
+
+Name | Description
+--- | --- | --- | --- |--- |--- |--- |--- |--- |--- |--- |---
+<span>vscode-input.compile-command.cpp</span> | Specifies the compile command to run C++. You can add or remove flags if it's necessary, such as -std=c++-17.
+<span>vscode-input.run-command.py</span> |  Specifies the command to execute program
+
 
 # Usage
 
