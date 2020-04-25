@@ -24,16 +24,22 @@
       "type": "object",
       "title": "VSCode-Input",
       "properties": {
-        "vscode-input.executable.g++": {
+        "vscode-input.compile-command.cpp": {
           "type": "string",
-          "default": "g++",
-          "markdownDescription": "Specifies the path to executable",
+          "default": "g++ -lm $path -o $output",
+          "markdownDescription": "Specifies the compile command",
           "scope": "application"
         },
-        "vscode-input.executable.python": {
+        "vscode-input.run-command.cpp": {
           "type": "string",
-          "default": "python3",
-          "markdownDescription": "Specifies the path to executable",
+          "default": "$output",
+          "markdownDescription": "Specifies the output binary to execute program",
+          "scope": "application"
+        },
+        "vscode-input.run-command.py": {
+          "type": "string",
+          "default": "python3 $path",
+          "markdownDescription": "Specifies the command to execute program",
           "scope": "application"
         }
       }

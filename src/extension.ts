@@ -1,52 +1,65 @@
-import * as vscode from "vscode";
+import { commands, window, ExtensionContext, OutputChannel } from "vscode";
 import * as cp from "child_process";
 
-import { buildCommand } from "./commands/buildCommand";
-import { infoMessage } from "./utils/message";
+import buildCommand from "./commands/buildCommand";
 
-export function activate(context: vscode.ExtensionContext) {
-  var proc: cp.ChildProcess | null;
-  var outputChannel: vscode.OutputChannel;
+export function activate(context: ExtensionContext) {
+  var runningProcess: cp.ChildProcess | undefined;
+  var outputChannel: OutputChannel;
 
   const registerCommand = (
-    context: vscode.ExtensionContext,
+    context: ExtensionContext,
     command: string,
     callback: (...args: any[]) => any
   ) => {
-    const disposable = vscode.commands.registerCommand(
-      command,
-      async (args) => {
-        if (!vscode.window.activeTextEditor) {
-          return;
-        }
-        callback(args);
+    const disposable = commands.registerCommand(command, async (args) => {
+      if (!window.activeTextEditor) {
+        return;
       }
-    );
+      callback(args);
+    });
     context.subscriptions.push(disposable);
   };
 
-  const killProcess = () => {
-    if (proc) {
-      proc.kill();
-      infoMessage("Process killed!");
-    } else {
-      infoMessage("No process to kill!");
+  const getOutputChannel = (): OutputChannel => {
+    if (!outputChannel) {
+      outputChannel = window.createOutputChannel("vscode-input.Result");
     }
+    outputChannel.clear();
+
+    return outputChannel;
+  };
+
+  const killProcess = (newProcessStarted = false) => {
+    outputChannel = getOutputChannel();
+
+    if (runningProcess) {
+      runningProcess.kill();
+    }
+    outputChannel.clear();
+    if (!newProcessStarted) {
+      outputChannel.append("Canceled.\n");
+      outputChannel.show(true);
+    }
+    runningProcess = undefined;
   };
 
   registerCommand(context, "vscode-input.Build", async () => {
-    // TODO: Set focus to editor when focus it's not focused
-    // TODO: Allow user to change default executable path for each programming language
-    // TODO: Allow user to run executable with some flags (such as g++ -std=c++-17)
-    if (!outputChannel) {
-      outputChannel = vscode.window.createOutputChannel("vscode-input.Result");
-    }
+    // TODO: Set focus to editor when focus it's not focused [?]
+
+    killProcess(true);
+
+    outputChannel = getOutputChannel();
+
     outputChannel.clear();
-    proc = buildCommand(outputChannel);
+    outputChannel.append('Running...');
+    outputChannel.show(true);
+
+    runningProcess = await buildCommand(outputChannel);
   });
 
-  registerCommand(context, "vscode-input.Cancel", () => {
-    killProcess();
+  registerCommand(context, "vscode-input.Cancel", async () => {
+    killProcess(false);
   });
 }
 

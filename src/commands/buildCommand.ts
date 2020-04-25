@@ -1,104 +1,123 @@
-import * as vscode from "vscode";
+import { window, workspace, OutputChannel } from "vscode";
 import * as fs from "fs";
 import * as cp from "child_process";
 
-export interface LanguageConfig {
-  regex: RegExp;
-  executable: string;
-  extension: string;
-}
+export default async function buildCommand(
+  outputChannel: OutputChannel
+): Promise<cp.ChildProcess | undefined> {
+  const languageRegex = (fileExtension: string): RegExp => {
+    const rx: { [ext: string]: RegExp } = {
+      cpp: /(?<=\*\*input\n)(.*\n)*(?=\*)/,
+      py: /(?<="""input\n)(.*\n)*(?=")/,
+    };
+    return rx[fileExtension] as RegExp;
+  };
 
-export function buildCommand(
-  outputChannel: vscode.OutputChannel
-): cp.ChildProcess | null {
-  const extractInputFromFile = (path: string, regexExp: RegExp): string => {
+  const getInput = (path: string, fileExtension: string): string => {
     const content = fs.readFileSync(path, "utf8");
-    const input = content.match(regexExp);
+    const input = content.match(languageRegex(fileExtension));
     if (input) {
       return input[0];
     }
     return "";
   };
 
-  const languageConfig = (extension: string): LanguageConfig | null => {
-    const configs: any = {
-      cpp: {
-        regex: /(?<=\*\*input\n)(.*\n)*(?=\*)/,
-        executable: "g++",
-        extension,
-      },
-      py: {
-        regex: /(?<="""input\n)(.*\n)*(?=")/,
-        executable: "python3",
-        extension,
-      },
-    };
-    if (configs[extension]) {
-      return configs[extension];
-    }
-    return null;
+  const getCompileCommand = (fileExtension: string): string | undefined => {
+    return workspace
+      .getConfiguration()
+      .get(`vscode-input.compile-command.${fileExtension}`);
   };
 
-  const getCommand = (
-    path: string,
-    input: string,
-    languageConfig: LanguageConfig
-  ): string => {
-    switch (languageConfig.extension) {
-      case "cpp":
-        return `${languageConfig.executable} -lm ${path} -o bin && echo "${input}" | ./bin`;
-      case "py":
-        return `echo "${input}" | ${languageConfig.executable} ${path}`;
-      default:
-        return "";
-    }
+  const getRunCommand = (fileExtension: string): string | undefined => {
+    return workspace
+      .getConfiguration()
+      .get(`vscode-input.run-command.${fileExtension}`);
   };
 
-  const execCommand = (
+  const compileCode = async (
+    path: string,
+    output: string,
+    compileCmd: string
+  ): Promise<boolean> => {
+    if (compileCmd.includes("$path"))
+      compileCmd = compileCmd.replace("$path", path);
+    if (compileCmd.includes("$output"))
+      compileCmd = compileCmd.replace("$output", output);
+
+    return new Promise((resolve, _) => {
+      cp.exec(compileCmd, (err, stdout, stderr) => {
+        if (err) {
+          outputChannel.append(err.message);
+          outputChannel.show();
+          resolve(false);
+        } else {
+          resolve(true);
+        }
+      });
+    });
+  };
+
+  const execute = (
     path: string,
     input: string,
-    languageConfig: LanguageConfig
-  ): cp.ChildProcess | null => {
-    const command = getCommand(path, input, languageConfig);
-    if (!command) return null;
-    const proc: cp.ChildProcess = cp.exec(command, (err, stdout, stderr) => {
-      outputChannel.clear();
+    output: string,
+    fileExtension: string
+  ) => {
+    let runCmd = getRunCommand(fileExtension);
+
+    if (!runCmd) {
+      outputChannel.show();
+      outputChannel.append(`No run command especified for ${fileExtension}.`);
+      return;
+    }
+
+    if (runCmd.includes("$path")) runCmd = runCmd.replace("$path", path);
+    if (runCmd.includes("$output")) runCmd = runCmd.replace("$output", output);
+    const proc: cp.ChildProcess = cp.exec(runCmd, (err, stdout, stderr) => {
       outputChannel.show(true);
-      if (stdout) {
-        outputChannel.append(stdout);
-      }
-      if (err) {
-        outputChannel.append(err.message);
+      if (!err?.killed) {
+        outputChannel.clear();
+        if (stdout) {
+          outputChannel.append(stdout);
+        }
+        if (stderr) {
+          outputChannel.append(stderr);
+        }
+        if (err) {
+          outputChannel.append(err.message);
+        }
       }
     });
-
+    proc.stdin?.write(input);
+    proc.stdin?.end();
     return proc;
   };
 
-  const getConfigByFileExt = (path: string): LanguageConfig | null => {
-    let split: string[] = path.split(".");
-    let extension = split[split.length - 1];
-    return languageConfig(extension);
+  const runCommands = async (
+    path: string,
+    input: string,
+    output: string,
+    fileExtension: string
+  ) => {
+    const compileCmd = getCompileCommand(fileExtension);
+    if (compileCmd) {
+      const compile = await compileCode(path, output, compileCmd);
+      if (!compile) {
+        return;
+      }
+    }
+    return execute(path, input, output, fileExtension);
   };
 
-  const currentlyOpenTabfilePath: string =
-    vscode.window.activeTextEditor?.document.uri.fsPath || "";
+  const path: string = window.activeTextEditor?.document.uri.fsPath || "";
 
-  if (currentlyOpenTabfilePath) {
-    try {
-      const languageConfig: LanguageConfig | null = getConfigByFileExt(
-        currentlyOpenTabfilePath
-      );
-      if (languageConfig) {
-        const input = extractInputFromFile(
-          currentlyOpenTabfilePath,
-          languageConfig.regex
-        );
-        return execCommand(currentlyOpenTabfilePath, input, languageConfig);
-      }
-    } catch (err) {
-      console.log(err);
-    }
+  const fileExtension: string | undefined = path.split(".").pop();
+
+  const output: string = path.split(".")[0];
+
+  if (fileExtension) {
+    const input = getInput(path, fileExtension);
+    return await runCommands(path, input, output, fileExtension);
   }
-  return null;
+  return undefined;
 }
