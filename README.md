@@ -23,7 +23,7 @@ vscode-input.run-command.py |  Specifies the command to execute program
 C++
 
 ```c++
-/**input
+/*input
 3
 string_1
 string_2

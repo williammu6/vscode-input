@@ -7,7 +7,7 @@ export default async function buildCommand(
 ): Promise<cp.ChildProcess | undefined> {
   const languageRegex = (fileExtension: string): RegExp => {
     const rx: { [ext: string]: RegExp } = {
-      cpp: /(?<=\*\*input\n)(.*\n)*(?=\*)/,
+      cpp: /(?<=\*input\n)(.*\n)*(?=\*)/,
       py: /(?<="""input\n)(.*\n)*(?=")/,
     };
     return rx[fileExtension] as RegExp;
