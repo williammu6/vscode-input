@@ -1,4 +1,4 @@
-import { window, workspace, OutputChannel } from "vscode";
+import { window, workspace, OutputChannel, TextDocument, TextEditor } from "vscode";
 import * as fs from "fs";
 import * as cp from "child_process";
 
@@ -73,6 +73,7 @@ export default async function buildCommand(
 
     if (runCmd.includes("$path")) runCmd = runCmd.replace("$path", path);
     if (runCmd.includes("$output")) runCmd = runCmd.replace("$output", output);
+
     const proc: cp.ChildProcess = cp.exec(runCmd, (err, stdout, stderr) => {
       outputChannel.show(true);
       if (!err?.killed) {
@@ -109,15 +110,53 @@ export default async function buildCommand(
     return execute(path, input, output, fileExtension);
   };
 
-  const path: string = window.activeTextEditor?.document.uri.fsPath || "";
+  const saveFile = async (textEditor: TextEditor) => {
+    if (textEditor && textEditor.document.isDirty) {
+      return textEditor.document.save();
+    }
+  }
 
-  const fileExtension: string | undefined = path.split(".").pop();
+  const getCurrentTextEditor = (): TextEditor | undefined => {
+    const activeTextEditor = window.activeTextEditor;
+    if (activeTextEditor) {
+      if (activeTextEditor.document.uri.scheme === 'file') {
+        return activeTextEditor; 
+      }
+      if (activeTextEditor.document.uri.scheme === 'output') {
+        return window.visibleTextEditors.find(v => v.document.uri.scheme === 'file');
+      }
+    }
+  }
 
-  const output: string = path.split(".")[0];
+  const isValidFileExtension = (fileExtension: string): boolean => {
+    const allowedExtensions = ['cpp', 'c', 'py'];
+    return !!allowedExtensions.includes(fileExtension);
+  }
 
-  if (fileExtension) {
-    const input = getInput(path, fileExtension);
-    return await runCommands(path, input, output, fileExtension);
+  let textEditor: TextEditor | undefined = getCurrentTextEditor();
+
+  if (textEditor) {
+
+    await saveFile(textEditor);
+
+    const path = textEditor.document.uri.fsPath;
+
+    const fileExtension: string | undefined = path.split(".").pop();
+
+    const output: string = path.split(".")[0];
+
+    if (fileExtension) {
+      if (isValidFileExtension(fileExtension)) {
+        const input = getInput(path, fileExtension);
+        return await runCommands(path, input, output, fileExtension);
+      } else {
+        outputChannel.clear();
+        outputChannel.append(`This command is not allowed for ${fileExtension} files.`);
+      }
+    }
+  } else {
+    outputChannel.clear();
+    outputChannel.append('Open a program and rerun the command.');
   }
   return undefined;
 }
