@@ -1,7 +1,7 @@
 import { TextEditor } from "vscode";
 import * as fs from "fs";
 
-export default class File {
+export default class CodeFile {
   languageRegex = (fileExtension: string): RegExp => {
     const r: { [ext: string]: RegExp } = {
       cpp: /(?<=\*input\n)(.*\n)*(?=\*)/,
