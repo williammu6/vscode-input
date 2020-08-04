@@ -1,51 +1,49 @@
-import { window, workspace, OutputChannel, TextDocument, TextEditor } from "vscode";
-import * as fs from "fs";
+import { window, workspace, OutputChannel, TextEditor } from "vscode";
 import * as cp from "child_process";
+
+import CodeFile from "./CodeFile";
+import { Python, C } from "../ProgrammingLanguages";
 
 export default async function buildCommand(
   outputChannel: OutputChannel
 ): Promise<cp.ChildProcess | undefined> {
-  const languageRegex = (fileExtension: string): RegExp => {
-    const rx: { [ext: string]: RegExp } = {
-      cpp: /(?<=\*input\n)(.*\n)*(?=\*)/,
-      py: /(?<="""input\n)(.*\n)*(?=")/,
-    };
-    return rx[fileExtension] as RegExp;
+  const getCompileCommand = (codeFile: CodeFile): string => {
+    let cmd = workspace
+      .getConfiguration()
+      .get(`vscode-input.compile-command.${codeFile.extension}`);
+    if (cmd) return cmd as string;
+    throw new Error("Command not found");
   };
 
-  const getInput = (path: string, fileExtension: string): string => {
-    const content = fs.readFileSync(path, "utf8");
-    const input = content.match(languageRegex(fileExtension));
-    if (input) {
-      return input[0];
+  const getExecCommand = (codeFile: CodeFile): string => {
+    let cmd = workspace
+      .getConfiguration()
+      .get(`vscode-input.run-command.${codeFile.extension}`);
+    if (cmd) return cmd as string;
+    throw new Error("Command not found");
+  };
+
+  const getProgrammingLanguage = (codeFile: CodeFile): C | Python => {
+    switch (codeFile.extension) {
+      case "py":
+        return new Python();
+      case "c":
+      case "cpp":
+        return new C();
     }
-    return "";
+    throw new Error("Problem");
   };
 
-  const getCompileCommand = (fileExtension: string): string | undefined => {
-    return workspace
-      .getConfiguration()
-      .get(`vscode-input.compile-command.${fileExtension}`);
-  };
+  const compileCode = async (codeFile: CodeFile): Promise<boolean> => {
+    let compileCmd = getCompileCommand(codeFile);
 
-  const getRunCommand = (fileExtension: string): string | undefined => {
-    return workspace
-      .getConfiguration()
-      .get(`vscode-input.run-command.${fileExtension}`);
-  };
-
-  const compileCode = async (
-    path: string,
-    output: string,
-    compileCmd: string
-  ): Promise<boolean> => {
     if (compileCmd.includes("$path"))
-      compileCmd = compileCmd.replace("$path", path);
+      compileCmd = compileCmd.replace("$path", codeFile.path);
     if (compileCmd.includes("$output"))
-      compileCmd = compileCmd.replace("$output", output);
+      compileCmd = compileCmd.replace("$output", codeFile.output);
 
     return new Promise((resolve, _) => {
-      cp.exec(compileCmd, (err, stdout, stderr) => {
+      cp.exec(compileCmd, err => {
         if (err) {
           outputChannel.append(err.message);
           outputChannel.show();
@@ -57,22 +55,19 @@ export default async function buildCommand(
     });
   };
 
-  const execute = (
-    path: string,
-    input: string,
-    output: string,
-    fileExtension: string
-  ) => {
-    let runCmd = getRunCommand(fileExtension);
-
+  const execute = (codeFile: CodeFile) => {
+    let runCmd = getExecCommand(codeFile);
     if (!runCmd) {
+      const message = `No run command especified for ${codeFile.extension}.`;
       outputChannel.show();
-      outputChannel.append(`No run command especified for ${fileExtension}.`);
-      return;
+      outputChannel.append(message);
+      throw new Error(message);
     }
 
-    if (runCmd.includes("$path")) runCmd = runCmd.replace("$path", path);
-    if (runCmd.includes("$output")) runCmd = runCmd.replace("$output", output);
+    if (runCmd.includes("$path"))
+      runCmd = runCmd.replace("$path", codeFile.path);
+    if (runCmd.includes("$output"))
+      runCmd = runCmd.replace("$output", codeFile.output);
 
     const proc: cp.ChildProcess = cp.exec(runCmd, (err, stdout, stderr) => {
       outputChannel.show(true);
@@ -89,74 +84,67 @@ export default async function buildCommand(
         }
       }
     });
-    proc.stdin?.write(input);
+    proc.stdin?.write(codeFile.getInput());
     proc.stdin?.end();
     return proc;
   };
 
-  const runCommands = async (
-    path: string,
-    input: string,
-    output: string,
-    fileExtension: string
-  ) => {
-    const compileCmd = getCompileCommand(fileExtension);
-    if (compileCmd) {
-      const compile = await compileCode(path, output, compileCmd);
-      if (!compile) {
-        return;
-      }
+  const run = async (codeFile: CodeFile) => {
+    const plConf = getProgrammingLanguage(codeFile);
+    if (plConf.isCompiled) {
+      const compiledOK = await compileCode(codeFile);
+      if (compiledOK) return;
+      throw new Error("Compilation error");
     }
-    return execute(path, input, output, fileExtension);
+    return execute(codeFile);
   };
 
   const saveFile = async (textEditor: TextEditor) => {
     if (textEditor && textEditor.document.isDirty) {
       return textEditor.document.save();
     }
-  }
+  };
 
   const getCurrentTextEditor = (): TextEditor | undefined => {
-    const activeTextEditor = window.activeTextEditor;
-    if (activeTextEditor) {
-      if (activeTextEditor.document.uri.scheme === 'file') {
-        return activeTextEditor; 
+    let fileTextEditor;
+
+    const activeWindow = window.activeTextEditor;
+
+    if (activeWindow) {
+      if (activeWindow.document.uri.scheme === "file") {
+        fileTextEditor = activeWindow;
       }
-      if (activeTextEditor.document.uri.scheme === 'output') {
-        return window.visibleTextEditors.find(v => v.document.uri.scheme === 'file');
+
+      if (activeWindow.document.uri.scheme === "output") {
+        fileTextEditor = window.visibleTextEditors.find(
+          v => v.document.uri.scheme === "file"
+        );
       }
     }
-  }
 
-  const isValidFileExtension = (fileExtension: string): boolean => {
-    const allowedExtensions = ['cpp', 'c', 'py'];
-    return !!allowedExtensions.includes(fileExtension);
-  }
+    if (fileTextEditor) return fileTextEditor;
+
+    throw new Error("File text editor not found");
+  };
 
   let textEditor: TextEditor | undefined = getCurrentTextEditor();
 
   if (textEditor) {
-
     await saveFile(textEditor);
 
-    const path = textEditor.document.uri.fsPath;
+    const codeFile = new CodeFile(textEditor);
 
-    const fileExtension: string | undefined = path.split(".").pop();
-
-    const output: string = path.split(".")[0];
-
-    if (fileExtension) {
-      if (isValidFileExtension(fileExtension)) {
-        const input = getInput(path, fileExtension);
-        return await runCommands(path, input, output, fileExtension);
-      } else {
-        outputChannel.clear();
-        outputChannel.append(`This command is not allowed for ${fileExtension} files.`);
-      }
+    if (codeFile.extension) {
+      return await run(codeFile);
+    } else {
+      outputChannel.clear();
+      outputChannel.append(
+        `This command is not allowed for ${codeFile.extension} files.`
+      );
     }
   } else {
     outputChannel.clear();
-    outputChannel.append('Open a program and rerun the command.');
+    outputChannel.append("Open a program and rerun the command.");
   }
   return undefined;
 }
